@@ -1,100 +1,124 @@
-GitHub Workflow: The Vibe Iterate Method
+# The Vibe Framework: Test-Driven Development for AI-Assisted Coding
 
-This guide defines the repeatable process for adding features or fixes using the Vibe Coding Framework. The goal: every AI-assisted change is scoped, test-backed, reviewable, and reversible.
+**Core Principle**: Small steps, tests first, no scope creep.
 
-1) Prerequisites (before you start)
-- On main: git status clean, then git pull.
-- Name branches as vibe/<type>-<summary> (examples: vibe/feature-auth-rate-limit, vibe/fix-null-logging).
-- Never commit directly to main.
+## 1. Setup
+```bash
+git checkout main && git pull
+git checkout -b vibe/<type>-<description>
+```
+Never commit to main directly.
 
-2) Define the Vibe (what you will build)
-Capture this before coding so prompts stay focused and traceable.
+## 2. Define ONE Small Behavior
+Before any code, answer:
+- **What**: One specific behavior in one sentence
+- **Where**: Exact file/function (with line ranges)
+- **Don't Touch**: What files/functions to avoid
+- **Test**: How you'll verify it works
 
-Template:
-Goal: <what changes for users or systems>
-Scope: <what is included / explicitly out of scope>
-Acceptance: <bullet list of observable outcomes>
-Risks/Edge cases: <empty input, long strings, timing, error paths>
-Affected areas: <modules, endpoints, UI flows>
+**Size Limit**: Must be <50 lines of code. If bigger, split it.
 
-Use-case snippet (required, keeps AI prompts precise):
-- Title
-- Primary actor(s)
-- Preconditions
-- Trigger
-- Main success path (short steps)
-- Alternate/edge paths
-- Postconditions/output
+Example:
+```
+What: Add email format validation to validate_user()
+Where: app.py lines 45-68, tests/test_app.py
+Don't Touch: Other functions in app.py, imports
+Test: test_validate_user_rejects_invalid_email
+```
 
-When using AI assistance, include the use-case snippet in your prompt. If any part is missing or unclear, the assistant should ask for those details before coding. Keep it 5–8 lines.
+## 3. TDD Cycle (Red → Green → Refactor)
 
-Definition of Ready (DoR) — required before starting a vibe
-- Use-case snippet complete (title, actors, preconditions, trigger, main/alternate paths, postconditions).
-- Goal, scope, acceptance criteria, and risks/edge cases captured.
-- Affected areas listed (modules, endpoints, UI flows).
-- Test plan noted (what layers: unit/integration/contract/regression).
-- If missing, do not start coding; update the prompt/issue first.
+### Step 1: Write Failing Test (RED)
+```bash
+# Write test first
+pytest tests/ -v  # Should FAIL
+git commit -m "vibe: add test for [behavior]"
+```
 
-3) The Vibe Iterate Cycle (per chunk)
-1. Sync & Branch: start from updated main; git checkout -b vibe/<name>.
-2. Define the vibe: fill the template above in your IDE/PR description.
-3. Tests: write/extend tests first for new behavior; run the suite before accepting code.
-4. Validate (self-audit): lint/style, inputs validated, errors handled, logs appropriate, edge cases covered.
-5. Commit: small, atomic commits using git commit -m "vibe: <brief change>".
+**AI Rule**: MUST refuse to write production code before this step.
 
-4) Test expectations
-- Prefer test-first when adding behavior; always add coverage for fixes.
-- Name tests by scenario and outcome (e.g., validates_invalid_email_returns_400).
-- Tests must cover the edge cases listed in the vibe/use-case (empty/null, long strings, alternates), not just the happy path.
-- Include regression tests when fixing bugs.
-- Group tests by use case: keep tests for one use case together (e.g., tests/usecase_<name>.py or a describe/fixture named after the use case). Reference the use-case title/ID in test names or descriptions.
-- Code changes should stay within the use case’s declared scope. If you must touch out-of-scope code, add tests for that area first, then change it.
+### Step 2: Make Test Pass (GREEN)
+```bash
+# Write minimal code to pass test
+pytest tests/ -v  # Should PASS
+git commit -m "vibe: implement [behavior]"
+```
 
-Definition of Done (DoD) — required before merge
-- Tests added/updated and passing locally and in CI (lint + test suite).
-- Docs updated where relevant (API docs, README, changelog).
-- PR reviewed/approved; branch aligned with main; branch deleted post-merge.
-- Rollback/feature-flag plan documented if change is risky.
-- For services: health endpoint intact, logging at appropriate level, and any new env vars documented.
+**Constraints**:
 
-5) Quality checklist before commit
-- Tests pass locally (and new tests added when behavior changes).
-- Lint/style run (if configured).
-- Input validation and error handling present; avoid silent failures.
-- Edge cases checked: empty/null, long strings, concurrency/timing (if relevant).
-- No unrelated refactors bundled with features unless documented.
+### Step 3: Verify & Refactor (CLEAN)
+```bash
+git diff --stat  # Verify <50 lines, <3 files
+pytest tests/ -v  # Still passing
+```
 
-6) Commit rules
-- Format: vibe: <summary> (present tense, concise).
-- Keep commits small and purposeful; split behavior changes from large refactors when possible.
+Optional: Clean up code without changing behavior.
 
-7) Integration via Pull Request
-- Push: git push origin vibe/<name>.
-- PR must describe goal, scope, approach, tests run (with commands), and edge cases considered.
-- Require green CI (tests + lint) before merge. If CI is absent, manually rerun the full test command and note results.
-- Merge only via PR; delete the branch after merge to avoid drift.
+### Step 4: Next Iteration
+Repeat Steps 1-3 for next small behavior, or merge via PR.
 
-Suggested PR outline (can be a template):
-Goal: …
-Approach: …
-Tests: <commands and outcomes>
-Edge cases: …
-Notes/Risks: …
+## 4. AI Assistant Rules
 
-8) Traceability and rollback
-- Link vibes to issues/tickets when available.
-- If feasible, add a feature flag or describe a rollback plan (revert commit/PR) for risky changes.
+**BEFORE writing production code, AI MUST ask:**
+1. "Does a failing test exist for this?"
+2. "What files/functions should I modify?"
+3. "What should I NOT touch?"
 
-9) Recommended project structure
-- /tests for automated checks.
-- VIBE_GUIDE.md (this file).
-- .github/PULL_REQUEST_TEMPLATE.md to enforce the PR outline above.
+**AI MUST REFUSE if**:
 
-Lifecycle alignment (lightweight SDLC mapping)
-- Stages: Idea/Backlog → Ready (DoR met) → In Progress (branch created) → In Review (PR open) → Done (merged) → Released (deployed/tagged).
-- Traceability: Link vibes/PRs to issue IDs; reference the issue/use-case in branch names, commits, and test names when relevant.
-- Risk/impact note: Briefly capture impact (data, security, perf, UX) and rollback plan in the PR for higher-risk changes.
-- Release hygiene: Tag releases (e.g., vX.Y.Z), update CHANGELOG, note deployment steps and container image tag/env vars if shipping via Docker.
+**AI Response Template** (when refusing):
+```
+I need a failing test first (Vibe Step 1).
 
-Why this works
-Isolated branches keep changes contained, tests guard behavior, and the PR ritual documents intent and validation so AI-generated code remains reviewable and reversible.
+Please specify:
+- Exact behavior to test (one sentence)
+- Which file/function to modify
+- What NOT to change
+
+Then I'll write the test, run it (should fail), and write code to pass it.
+```
+
+## 5. Pull Request Checklist
+
+Before merging:
+- [ ] All tests pass (`pytest tests/ -v`)
+- [ ] Diff is clean (`git diff --stat` shows expected files only)
+- [ ] Commits follow format: `vibe: <summary>`
+- [ ] PR describes what changed and why
+
+PR Template:
+```
+## What
+[One sentence description]
+
+## Changes
+- [Behavior 1] (commits: abc123, def456)
+- [Behavior 2] (commits: ghi789)
+
+## Tests
+`pytest tests/ -v` - all passing
+
+## Diff
+[Number] files, [Number] lines changed
+```
+
+## 6. Quick Reference
+
+| Phase | Command | Expected Result |
+|-------|---------|-----------------|
+| **Red** | `pytest tests/ -v` | New test FAILS |
+| **Green** | `pytest tests/ -v` | All tests PASS |
+| **Clean** | `git diff --stat` | <50 lines, <3 files |
+
+**Commit Format**: `vibe: <present tense summary>`
+
+**Branch Format**: `vibe/<feature|fix|refactor>-<short-description>`
+
+---
+
+## Why This Works
+
+- **Small steps** = Easy to review, easy to revert
+- **Tests first** = Prevents scope creep, documents intent
+- **AI constraints** = Keeps generative code focused and predictable
+- **Git discipline** = Every change is traceable and reversible
