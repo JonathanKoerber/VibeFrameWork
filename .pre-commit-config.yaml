@@ -1,0 +1,34 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: local
+    hooks:
+      - id: diff-size-guard
+        name: diff-size-guard
+        entry: python scripts/diff_guard.py
+        language: system
+        stages: [pre-commit]
+
+      - id: test-required-when-code-changes
+        name: test-required-when-code-changes
+        entry: python scripts/test_guard.py
+        language: system
+        stages: [pre-commit]
+
+      - id: commit-msg-format
+        name: commit-msg-format
+        entry: python scripts/commit_msg_check.py
+        language: system
+        stages: [commit-msg]
+        pass_filenames: true
+
+      - id: pre-push-checks
+        name: pre-push-checks
+        entry: python scripts/pre_push_guard.py
+        language: system
+        stages: [pre-push]
