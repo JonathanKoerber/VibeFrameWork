@@ -31,6 +31,6 @@ def test_info_returns_item(client):
 
 
 def test_echo_round_trips_payload(client):
-    resp = client.post("/echo", json={"message": "hi"})
+    resp = client.post("/echo", json={"message": "HI"})
     assert resp.status_code == 200
-    assert resp.get_json()["echo"]["message"] == "hi"
+    assert resp.get_json()["echo"]["message"] == "HI"
